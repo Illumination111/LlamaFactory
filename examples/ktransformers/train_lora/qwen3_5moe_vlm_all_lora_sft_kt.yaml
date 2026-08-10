@@ -1,0 +1,45 @@
+### model
+model_name_or_path: Qwen/Qwen3.5-122B-A10B
+image_max_pixels: 262144
+video_max_pixels: 16384
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 8
+lora_alpha: 16
+lora_target: all
+vlm_lora_scope: all
+
+### dataset
+dataset: mllm_demo
+template: qwen3_5
+cutoff_len: 512
+overwrite_cache: true
+preprocessing_num_workers: 4
+dataloader_num_workers: 1
+
+### output
+output_dir: saves/KT_FT_qwen35Moe_VLM_all
+logging_steps: 1
+save_steps: 100
+plot_loss: true
+overwrite_output_dir: true
+report_to: none
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+gradient_checkpointing: true
+gradient_checkpointing_kwargs: {use_reentrant: false}
+ddp_timeout: 360000000
+
+### ktransformers
+use_kt: true

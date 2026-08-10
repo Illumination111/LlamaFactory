@@ -493,13 +493,17 @@ class KTransformersArguments:
 
     def get_kt_config_dict(self, finetuning_args: Any, model_max_length: int | None) -> dict[str, Any]:
         r"""Build KT config values from LLaMA-Factory model and LoRA arguments."""
+        vision_only_lora = getattr(finetuning_args, "vlm_lora_scope", "default") == "vision"
         kt_config = {
             "kt_lora_rank": getattr(finetuning_args, "lora_rank", None),
             "kt_lora_alpha": getattr(finetuning_args, "lora_alpha", None),
             "kt_weight_path": self.kt_weight_path,
             "kt_expert_checkpoint_path": self.kt_expert_checkpoint_path,
             "kt_model_max_length": model_max_length,
-            "kt_use_lora_experts": self.kt_use_lora_experts,
+            "kt_use_lora_experts": False if vision_only_lora else self.kt_use_lora_experts,
+            # KT owns the offloaded language experts. The opt-in freeze flag
+            # selects its existing SkipLoRA backward kernel for vision-only SFT.
+            "kt_freeze_experts": vision_only_lora,
             "kt_lora_expert_num": self.kt_lora_expert_num,
             "kt_lora_expert_intermediate_size": self.kt_lora_expert_intermediate_size,
         }
@@ -518,6 +522,7 @@ class KTransformersArguments:
             "kt_lora_rank": "ACCELERATE_KT_LORA_RANK",
             "kt_lora_alpha": "ACCELERATE_KT_LORA_ALPHA",
             "kt_use_lora_experts": "ACCELERATE_KT_USE_LORA_EXPERTS",
+            "kt_freeze_experts": "ACCELERATE_KT_FREEZE_EXPERTS",
             "kt_lora_expert_num": "ACCELERATE_KT_LORA_EXPERT_NUM",
             "kt_lora_expert_intermediate_size": "ACCELERATE_KT_LORA_EXPERT_INTERMEDIATE_SIZE",
         }

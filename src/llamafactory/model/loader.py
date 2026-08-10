@@ -140,7 +140,7 @@ def load_model(
     init_kwargs = _get_init_kwargs(model_args)
     config = load_config(model_args)
     patch_config(config, tokenizer, model_args, init_kwargs, is_trainable)
-    prepare_kt_vlm_conv3d(model_args, config)
+    prepare_kt_vlm_conv3d(model_args, config, is_trainable)
     apply_liger_kernel(config, model_args, is_trainable, require_logits=(finetuning_args.stage not in ["pt", "sft"]))
 
     model = None
@@ -200,7 +200,7 @@ def load_model(
     # continue only after its optional compatibility layer verifies the model.
     if is_torch_version_greater_than("2.9.0") and not is_torch_version_greater_than("2.10.0"):
         if any(isinstance(m, torch.nn.Conv3d) for m in model.modules()):
-            if not validate_kt_vlm_conv3d(model_args, model):
+            if not validate_kt_vlm_conv3d(model_args, model, is_trainable):
                 raise ValueError(
                     "Unsupported torch version detected: torch 2.9.x with Conv3D. "
                     "This combination is known to cause severe performance regression. "

@@ -75,9 +75,9 @@ def _enable_compatibility() -> tuple[Any, Any, Any]:
     return compatibility, is_patch_active, validate_modules
 
 
-def prepare_kt_vlm_conv3d(model_args: "ModelArguments", config: "PretrainedConfig") -> None:
+def prepare_kt_vlm_conv3d(model_args: "ModelArguments", config: "PretrainedConfig", is_trainable: bool) -> None:
     """Activate compatibility before weight loading for a known KT VLM."""
-    if not model_args.use_kt or not _is_torch_29() or not _is_supported_vlm_config(config):
+    if not is_trainable or not model_args.use_kt or not _is_torch_29() or not _is_supported_vlm_config(config):
         return
 
     try:
@@ -91,9 +91,9 @@ def prepare_kt_vlm_conv3d(model_args: "ModelArguments", config: "PretrainedConfi
     )
 
 
-def validate_kt_vlm_conv3d(model_args: "ModelArguments", model: "PreTrainedModel") -> bool:
+def validate_kt_vlm_conv3d(model_args: "ModelArguments", model: "PreTrainedModel", is_trainable: bool) -> bool:
     """Return whether KT safely handles the model's torch 2.9 Conv3D modules."""
-    if not model_args.use_kt or not _is_torch_29():
+    if not is_trainable or not model_args.use_kt or not _is_torch_29():
         return False
 
     try:
