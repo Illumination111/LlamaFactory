@@ -433,18 +433,19 @@ _register_composite_model(
 _register_composite_model(
     model_type="qwen3_5",
     projector_keys=["model.visual.merger"],
-    vision_model_keys=["visual.pos_embed", "visual.patch_embed", "visual.blocks"],
+    # Freeze the whole vision tower for language-side LoRA SFT (Conv3d lives under visual.*).
+    vision_model_keys=["visual"],
     language_model_keys=["language_model", "lm_head"],
-    lora_conflict_keys=["patch_embed"],
+    lora_conflict_keys=["patch_embed", "visual"],
 )
 
 
 _register_composite_model(
     model_type="qwen3_5_moe",
     projector_keys=["model.visual.merger"],
-    vision_model_keys=["visual.pos_embed", "visual.patch_embed", "visual.blocks"],
+    vision_model_keys=["visual"],
     language_model_keys=["language_model", "lm_head"],
-    lora_conflict_keys=["patch_embed"],
+    lora_conflict_keys=["patch_embed", "visual"],
 )
 
 

@@ -31,6 +31,7 @@ from ..extras import logging
 from ..extras.misc import count_parameters, skip_check_imports, try_download_model_from_other_hub
 from ..extras.packages import is_torch_version_greater_than
 from .adapter import init_adapter
+from .model_utils.kt_vlm import prepare_kt_vlm_conv3d, validate_kt_vlm_conv3d
 from .model_utils.liger_kernel import apply_liger_kernel
 from .model_utils.misc import register_autoclass
 from .model_utils.mod import convert_pretrained_model_to_mod, load_mod_pretrained_model
@@ -139,6 +140,7 @@ def load_model(
     init_kwargs = _get_init_kwargs(model_args)
     config = load_config(model_args)
     patch_config(config, tokenizer, model_args, init_kwargs, is_trainable)
+    prepare_kt_vlm_conv3d(model_args, config)
     apply_liger_kernel(config, model_args, is_trainable, require_logits=(finetuning_args.stage not in ["pt", "sft"]))
 
     model = None
@@ -194,15 +196,17 @@ def load_model(
             model.load_state_dict(vhead_params, strict=False)
             logger.info_rank0(f"Loaded valuehead from checkpoint: {vhead_path}")
 
-    # Conv3D is not recommended when using torch 2.9.x
+    # Conv3D is not recommended when using torch 2.9.x. KT VLM training may
+    # continue only after its optional compatibility layer verifies the model.
     if is_torch_version_greater_than("2.9.0") and not is_torch_version_greater_than("2.10.0"):
         if any(isinstance(m, torch.nn.Conv3d) for m in model.modules()):
-            raise ValueError(
-                "Unsupported torch version detected: torch 2.9.x with Conv3D. "
-                "This combination is known to cause severe performance regression. "
-                "Please downgrade torch to <2.9 or remove Conv3D. "
-                "See https://github.com/pytorch/pytorch/issues/166122"
-            )
+            if not validate_kt_vlm_conv3d(model_args, model):
+                raise ValueError(
+                    "Unsupported torch version detected: torch 2.9.x with Conv3D. "
+                    "This combination is known to cause severe performance regression. "
+                    "Please downgrade torch to <2.9 or remove Conv3D. "
+                    "See https://github.com/pytorch/pytorch/issues/166122"
+                )
 
     if not is_trainable:
         model.requires_grad_(False)
