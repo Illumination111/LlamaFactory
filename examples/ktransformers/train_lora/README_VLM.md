@@ -12,12 +12,22 @@ These scopes select LoRA adapters across the requested modalities; they do not t
 
 Existing configurations are unchanged because the default is `vlm_lora_scope: default`. The Conv3D compatibility layer is also opt-in: it is activated only for trainable Qwen VLM runs with `use_kt: true` on PyTorch 2.9.x.
 
+The KT SFT stack currently provides `transformers-kt==5.6.0.post1`, whose import
+package reports `transformers==5.6.0`. LlamaFactory keeps rejecting the broken
+stock 5.6.0 release, but accepts this exact KT fork when KT is explicitly
+enabled and its integration hooks are present. `accelerate launch` sets
+`ACCELERATE_USE_KT=true` from a configuration containing an enabled
+`kt_config`; for a direct CLI launch, opt in explicitly:
+
 Example launches for Qwen3.5-122B-A10B and the built-in `mllm_demo` dataset:
 
 ```bash
-llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_text_lora_sft_kt.yaml
-llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_vision_lora_sft_kt.yaml
-llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_all_lora_sft_kt.yaml
+LLAMAFACTORY_ALLOW_TRANSFORMERS_KT=1 \
+  llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_text_lora_sft_kt.yaml
+LLAMAFACTORY_ALLOW_TRANSFORMERS_KT=1 \
+  llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_vision_lora_sft_kt.yaml
+LLAMAFACTORY_ALLOW_TRANSFORMERS_KT=1 \
+  llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_all_lora_sft_kt.yaml
 ```
 
 On PyTorch 2.9.x, install a KT kernel build with the optional compatibility dependency before launching:

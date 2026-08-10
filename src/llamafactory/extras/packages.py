@@ -98,6 +98,25 @@ def is_kt_available():
     return _is_package_available("kt_kernel")
 
 
+def is_verified_transformers_kt() -> bool:
+    """Return whether the installed Transformers tree is the verified KT fork."""
+    try:
+        transformers_version = importlib.metadata.version("transformers")
+        transformers_kt_version = importlib.metadata.version("transformers-kt")
+    except importlib.metadata.PackageNotFoundError:
+        return False
+
+    if (transformers_version, transformers_kt_version) != ("5.6.0", "5.6.0.post1"):
+        return False
+
+    try:
+        integration = importlib.import_module("transformers.integrations.kt")
+    except (ImportError, ModuleNotFoundError):
+        return False
+
+    return all(hasattr(integration, name) for name in ("HfTrainerKTConfig", "is_kt_expert_loading_enabled"))
+
+
 def is_requests_available():
     return _is_package_available("requests")
 
