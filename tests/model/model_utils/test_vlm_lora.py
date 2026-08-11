@@ -32,6 +32,7 @@ class _LanguageModel(torch.nn.Module):
         self.embed_tokens = torch.nn.Embedding(32, 4)
         self.layers = torch.nn.ModuleList([torch.nn.Module()])
         self.layers[0].q_proj = torch.nn.Linear(4, 4)
+        self.layers[0].conv1d = torch.nn.Conv1d(4, 4, kernel_size=3, padding=1, groups=4)
 
 
 class _Config(dict):
@@ -73,6 +74,13 @@ def test_find_vlm_lora_modules_by_scope(scope, expected, excluded):
 
     assert all(any(fragment in target for target in targets) for fragment in expected)
     assert all(all(fragment not in target for target in targets) for fragment in excluded)
+
+
+@pytest.mark.parametrize("scope", ("text", "all"))
+def test_find_vlm_lora_modules_excludes_grouped_conv(scope):
+    targets = find_vlm_lora_modules(_VLMFixture(), scope)
+
+    assert "model.language_model.layers.0.conv1d" not in targets
 
 
 @pytest.mark.parametrize(
@@ -204,11 +212,15 @@ def test_qwen35_moe_uses_real_text_vision_and_conv3d_targets():
         text_config={
             "vocab_size": 64,
             "hidden_size": 8,
-            "num_hidden_layers": 1,
+            "num_hidden_layers": 2,
             "num_attention_heads": 2,
             "num_key_value_heads": 1,
             "head_dim": 4,
-            "layer_types": ["full_attention"],
+            "layer_types": ["linear_attention", "full_attention"],
+            "linear_key_head_dim": 4,
+            "linear_num_key_heads": 2,
+            "linear_num_value_heads": 2,
+            "linear_value_head_dim": 4,
             "moe_intermediate_size": 4,
             "shared_expert_intermediate_size": 4,
             "num_experts_per_tok": 1,
@@ -237,7 +249,9 @@ def test_qwen35_moe_uses_real_text_vision_and_conv3d_targets():
     vision_targets = find_vlm_lora_modules(model, "vision")
     all_targets = find_vlm_lora_modules(model, "all")
 
-    assert any("model.language_model.layers.0.self_attn.q_proj" in target for target in text_targets)
+    assert any("model.language_model.layers.1.self_attn.q_proj" in target for target in text_targets)
+    assert any("model.language_model.layers.0.linear_attn.in_proj_qkv" in target for target in text_targets)
+    assert all("linear_attn.conv1d" not in target for target in text_targets)
     assert "model.visual.patch_embed.proj" in vision_targets
     assert any("model.visual.blocks.0.attn.qkv" in target for target in vision_targets)
     assert set(all_targets) == set(text_targets) | set(vision_targets)

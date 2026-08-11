@@ -28,19 +28,19 @@ logger = logging.get_logger(__name__)
 
 VlmLoraScope = Literal["text", "vision", "all"]
 
+_CONV_TYPES = (torch.nn.Conv1d, torch.nn.Conv2d, torch.nn.Conv3d)
+
 
 def _is_supported_lora_module(module: torch.nn.Module) -> bool:
-    """Match module classes supported by PEFT 0.18 LoRA without changing legacy discovery."""
-    if isinstance(
-        module,
-        (
-            torch.nn.Conv1d,
-            torch.nn.Conv2d,
-            torch.nn.Conv3d,
-            torch.nn.Linear,
-        ),
-    ):
+    """Match modules that are safe for automatic PEFT LoRA discovery."""
+    if isinstance(module, torch.nn.Linear):
         return True
+
+    # PEFT requires the LoRA rank to be divisible by groups and cannot merge
+    # grouped-convolution adapters. Keep automatic discovery rank-independent
+    # and safe while retaining regular vision patch-embedding convolutions.
+    if isinstance(module, _CONV_TYPES):
+        return module.groups == 1
 
     # Preserve support for quantized/custom Linear implementations used by the
     # existing `find_all_linear_modules` path.
