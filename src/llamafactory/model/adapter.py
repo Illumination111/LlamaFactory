@@ -24,6 +24,7 @@ from .model_utils.misc import find_all_linear_modules, find_expanded_modules
 from .model_utils.quantization import QuantizationMethod
 from .model_utils.unsloth import get_unsloth_peft_model, load_unsloth_peft_model
 from .model_utils.visual import COMPOSITE_MODELS, get_forbidden_modules, patch_target_modules
+from .model_utils.vlm_lora import find_vlm_lora_modules
 
 
 if TYPE_CHECKING:
@@ -212,7 +213,9 @@ def _setup_lora_tuning(
         logger.info_rank0("Loaded adapter(s): {}".format(",".join(model_args.adapter_name_or_path)))
 
     if is_trainable and adapter_to_resume is None:  # create new lora weights while training
-        if len(finetuning_args.lora_target) == 1 and finetuning_args.lora_target[0] == "all":
+        if finetuning_args.vlm_lora_scope != "default":
+            target_modules = find_vlm_lora_modules(model, finetuning_args.vlm_lora_scope)
+        elif len(finetuning_args.lora_target) == 1 and finetuning_args.lora_target[0] == "all":
             target_modules = find_all_linear_modules(model, finetuning_args.freeze_vision_tower)
         else:
             target_modules = finetuning_args.lora_target
@@ -220,7 +223,8 @@ def _setup_lora_tuning(
         if finetuning_args.use_llama_pro:
             target_modules = find_expanded_modules(model, target_modules, finetuning_args.freeze_trainable_layers)
 
-        target_modules = patch_target_modules(model, finetuning_args, target_modules)
+        if finetuning_args.vlm_lora_scope == "default":
+            target_modules = patch_target_modules(model, finetuning_args, target_modules)
 
         if (
             finetuning_args.use_dora
