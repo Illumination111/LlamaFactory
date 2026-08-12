@@ -30,6 +30,12 @@ LLAMAFACTORY_ALLOW_TRANSFORMERS_KT=1 \
   llamafactory-cli train examples/ktransformers/train_lora/qwen3_5moe_vlm_all_lora_sft_kt.yaml
 ```
 
+Qwen3-VL-MoE uses the same scoped LoRA path. The minimal all-modality example
+is `qwen3vlmoe_vlm_all_lora_sft_kt.yaml`; its matching eight-process FSDP2
+configuration is `../accelerate/fsdp2_kt_bf16_qwen3_vl_moe.yaml`. KT expert
+offload applies only to the MoE variants such as Qwen3-VL-30B-A3B and
+Qwen3-VL-235B-A22B. Run dense Qwen3-VL variants with `use_kt: false`.
+
 On PyTorch 2.9.x, install a KT kernel build with the optional compatibility dependency before launching:
 
 ```bash
