@@ -88,16 +88,6 @@ class LoraArguments:
             )
         },
     )
-    vlm_lora_scope: Literal["default", "text", "vision", "all"] = field(
-        default="default",
-        metadata={
-            "help": (
-                "LoRA target scope for VLMs. `default` preserves the existing target selection; "
-                "`text`, `vision` and `all` explicitly target the text side, vision side (including the "
-                "multimodal projector), or both sides. Non-default scopes require `lora_target=all`."
-            )
-        },
-    )
     loraplus_lr_ratio: float | None = field(
         default=None,
         metadata={"help": "LoRA plus learning rate ratio (lr_B / lr_A)."},
@@ -601,28 +591,6 @@ class FinetuningArguments(
         self.galore_target: list[str] = split_arg(self.galore_target)
         self.apollo_target: list[str] = split_arg(self.apollo_target)
         self.use_ref_model = self.stage == "dpo" and self.pref_loss not in ["orpo", "simpo"]
-
-        if self.vlm_lora_scope not in ["default", "text", "vision", "all"]:
-            raise ValueError(f"Unknown `vlm_lora_scope`: {self.vlm_lora_scope!r}.")
-
-        if self.vlm_lora_scope != "default":
-            if self.finetuning_type != "lora":
-                raise ValueError("`vlm_lora_scope` is only valid for LoRA training.")
-            if self.lora_target != ["all"]:
-                raise ValueError("Non-default `vlm_lora_scope` requires `lora_target=all`.")
-            if self.use_llama_pro:
-                raise ValueError("`vlm_lora_scope` is not compatible with LLaMA Pro.")
-
-            freeze_modes = {
-                "text": (True, True, False),
-                "vision": (False, False, True),
-                "all": (False, False, False),
-            }
-            (
-                self.freeze_vision_tower,
-                self.freeze_multi_modal_projector,
-                self.freeze_language_model,
-            ) = freeze_modes[self.vlm_lora_scope]
 
         assert self.finetuning_type in ["lora", "oft", "freeze", "full"], "Invalid fine-tuning method."
         assert self.ref_model_quantization_bit in [None, 8, 4], "We only accept 4-bit or 8-bit quantization."

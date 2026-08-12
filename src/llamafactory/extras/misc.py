@@ -36,7 +36,6 @@ from transformers.utils import (
 from transformers.utils.versions import require_version
 
 from . import logging
-from .packages import is_verified_transformers_kt
 
 
 _is_fp16_available = is_torch_npu_available() or is_torch_cuda_available()
@@ -95,26 +94,7 @@ def check_version(requirement: str, mandatory: bool = False) -> None:
 
 def check_dependencies() -> None:
     r"""Check the version of the required packages."""
-    allow_transformers_kt = (
-        any(
-            is_env_enabled(env_var)
-            for env_var in (
-                "ACCELERATE_USE_KT",
-                "LLAMAFACTORY_ALLOW_TRANSFORMERS_KT",
-                "USE_KT",
-            )
-        )
-        and is_verified_transformers_kt()
-    )
-    if allow_transformers_kt:
-        logger.warning_rank0_once(
-            "Using verified transformers-kt 5.6.0.post1 compatibility; "
-            "the exclusion of the stock transformers 5.6.0 release remains active."
-        )
-        check_version("transformers>=4.55.0,<=5.8.0,!=4.57.0")
-    else:
-        check_version("transformers>=4.55.0,<=5.8.0,!=4.57.0,!=5.6.0")
-
+    check_version("transformers>=4.55.0,<=5.8.0,!=4.57.0,!=5.6.0")
     check_version("datasets>=2.16.0,<=4.0.0")
     check_version("accelerate>=1.3.0,<=1.15.0")
     check_version("peft>=0.18.0,<=0.20.0")
