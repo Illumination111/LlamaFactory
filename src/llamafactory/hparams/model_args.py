@@ -587,13 +587,13 @@ class KTransformersArguments:
         r"""Keep LLaMA-Factory as the single gradient-checkpointing entry point."""
         if self.use_unsloth or self.use_unsloth_gc:
             raise ValueError("KTransformers cannot be combined with Unsloth checkpoint wrapping.")
-        if getattr(training_args, "gradient_checkpointing", False) and self.disable_gradient_checkpointing:
+        if getattr(training_args, "gradient_checkpointing", False):
             raise ValueError(
-                "`gradient_checkpointing: true` conflicts with `disable_gradient_checkpointing: true`."
+                "KTransformers uses LLaMA-Factory's `disable_gradient_checkpointing`; "
+                "remove `gradient_checkpointing: true`."
             )
-        checkpointing_kwargs = getattr(training_args, "gradient_checkpointing_kwargs", None)
-        if checkpointing_kwargs not in (None, {"use_reentrant": False}):
-            raise ValueError("KTransformers requires non-reentrant gradient checkpointing.")
+        if getattr(training_args, "gradient_checkpointing_kwargs", None) is not None:
+            raise ValueError("KTransformers supplies its checkpoint context; remove `gradient_checkpointing_kwargs`.")
 
         fsdp_config = getattr(training_args, "fsdp_config", None)
         if isinstance(fsdp_config, dict) and fsdp_config.get("activation_checkpointing"):
@@ -630,11 +630,9 @@ class KTransformersArguments:
 
         kt_config.update(
             {
-                "kt_lora_rank": getattr(finetuning_args, "lora_rank", None) if finetuning_type == "lora" else None,
-                "kt_lora_alpha": getattr(finetuning_args, "lora_alpha", None) if finetuning_type == "lora" else None,
-                "kt_lora_dropout": getattr(finetuning_args, "lora_dropout", None)
-                if finetuning_type == "lora"
-                else None,
+                "kt_lora_rank": getattr(finetuning_args, "lora_rank", None),
+                "kt_lora_alpha": getattr(finetuning_args, "lora_alpha", None),
+                "kt_lora_dropout": getattr(finetuning_args, "lora_dropout", None),
                 "kt_weight_path": self.kt_weight_path,
                 "kt_non_expert_weight_path": self.kt_non_expert_weight_path,
                 "kt_expert_checkpoint_path": self.kt_expert_checkpoint_path,
