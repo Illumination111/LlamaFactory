@@ -1,5 +1,1 @@
-transformers==5.8.0
-accelerate==1.11.0
-transformers-kt==5.6.0.post1
-accelerate-kt==1.14.0.post1
-kt-kernel[vlm-sft] @ git+https://github.com/kvcache-ai/ktransformers.git@main#subdirectory=kt-kernel
+ktransformers[sft]
